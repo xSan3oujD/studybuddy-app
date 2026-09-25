@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>StudyBuddy</title>
+<link rel="manifest" href="manifest.webmanifest">
+<script>window.FBReady=new Promise(r=>{window._fbRes=r})</script>
+<script src="firebase-config.js"></script>
+<meta name="theme-color" content="#2f6f5e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="StudyBuddy">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#1d2433;--mute:#6b7280;--line:#e5e2d9;--acc:#2f6f5e;--acc2:#e8f1ee;--warn:#c2410c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171c;--card:#1e232b;--ink:#eceff4;--mute:#9aa3b2;--line:#2c333d;--acc:#5fbfa6;--acc2:#1f2f2a;--warn:#fb923c}}
+:root[data-theme="dark"]{--bg:#14171c;--card:#1e232b;--ink:#eceff4;--mute:#9aa3b2;--line:#2c333d;--acc:#5fbfa6;--acc2:#1f2f2a;--warn:#fb923c}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:16px 16px 90px}
+h1{font-size:22px;margin:4px 0 2px}h2{font-size:17px;margin:0 0 10px}
+.sub{color:var(--mute);margin:0 0 14px}
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:5}
+nav button{flex:1;max-width:150px;background:none;border:0;padding:10px 4px;color:var(--mute);font:inherit;font-size:12px;cursor:pointer}
+nav button b{display:block;font-size:19px;font-weight:400}
+nav button.on{color:var(--acc);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+input,select,textarea,button.btn{font:inherit;color:var(--ink)}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg)}
+textarea{resize:vertical;min-height:70px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}.row>*{flex:1;min-width:120px}
+button.btn{background:var(--acc);color:#fff;border:0;border-radius:9px;padding:9px 14px;cursor:pointer;font-weight:600}
+button.btn.ghost{background:var(--acc2);color:var(--acc)}
+button.x{background:none;border:0;color:var(--mute);cursor:pointer;font-size:16px;flex:0}
+.bar{height:8px;background:var(--line);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--acc)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pill{font-size:12px;padding:2px 9px;border-radius:99px;background:var(--acc2);color:var(--acc);white-space:nowrap}
+.pill.w{background:#fde8dc;color:var(--warn)}
+.topic{display:flex;align-items:center;gap:8px;padding:4px 0}.topic input{width:auto}
+.topic.d span{text-decoration:line-through;color:var(--mute)}.topic span{flex:1}
+.empty{color:var(--mute);text-align:center;padding:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}.stat b{font-size:24px;display:block}.stat small{color:var(--mute)}
+.timer{font-size:64px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0}
+.chat{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.m{padding:9px 12px;border-radius:12px;max-width:92%;white-space:pre-wrap;word-wrap:break-word}
+.m.u{background:var(--acc);color:#fff;align-self:flex-end}.m.a{background:var(--card);border:1px solid var(--line);align-self:flex-start}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chips button{background:var(--acc2);color:var(--acc);border:0;border-radius:99px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.tabs{display:none}.tabs.on{display:block}
+.note{font-size:12px;color:var(--mute)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>📚 StudyBuddy</h1>
+<p class="sub" id="hello"></p>
+<div id="sync" class="pill" style="display:inline-block;margin-bottom:12px">💾 Saved on this device only</div>
+
+<section class="tabs on" id="t-home"></section>
+<section class="tabs" id="t-exams"></section>
+<section class="tabs" id="t-focus"></section>
+<section class="tabs" id="t-rules"></section>
+<section class="tabs" id="t-ai"></section>
+</div>
+<nav id="nav"></nav>
+
+<script type="module">
+try{
+  const c=window.FIREBASE_CONFIG;
+  if(!c||!c.apiKey||String(c.apiKey).startsWith('PASTE'))throw 0;
+  const B='https://www.gstatic.com/firebasejs/10.14.1/';
+  const [A,Au,F]=await Promise.all([import(B+'firebase-app.js'),import(B+'firebase-auth.js'),import(B+'firebase-firestore.js')]);
+  const app=A.initializeApp(c),auth=Au.getAuth(app),db=F.getFirestore(app);
+  window._fbRes({
+    onUser:cb=>Au.onAuthStateChanged(auth,cb),
+    signIn:async()=>{const p=new Au.GoogleAuthProvider();
+      try{await Au.signInWithPopup(auth,p)}
+      catch(e){if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment')await Au.signInWithRedirect(auth,p);
+        else if(e.code!=='auth/popup-closed-by-user'&&e.code!=='auth/cancelled-popup-request')throw e}},
+    signOut:()=>Au.signOut(auth),
+    ref:uid=>{const d=F.doc(db,'users',uid);return{
+      get:async()=>{const x=await F.getDoc(d);return{exists:x.exists(),data:()=>x.data()}},
+      set:v=>F.setDoc(d,v),
+      onSnapshot:(cb,er)=>F.onSnapshot(d,x=>cb({exists:x.exists(),data:()=>x.data(),metadata:x.metadata}),er)}}
+  });
+}catch(e){window._fbRes(null)}
+</script>
+<script>
+window.claude=window.claude||{use:async()=>null};
+const $=s=>document.querySelector(s);
+const uid=()=>Math.random().toString(36).slice(2,9);
+const today=()=>new Date().toISOString().slice(0,10);
+let S={subjects:[],exams:[],rules:[],log:{},pomo:{focus:25,brk:5}};
+try{const r=localStorage.getItem('studybuddy');if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+const save=()=>{S.updatedAt=Date.now();try{localStorage.setItem('studybuddy',JSON.stringify(S))}catch(e){}push()};
+function el(tag,attrs={},...kids){const e=document.createElement(tag);for(const k in attrs){if(k==='class')e.className=attrs[k];else if(k.startsWith('on'))e[k]=attrs[k];else e.setAttribute(k,attrs[k])}kids.flat().forEach(c=>e.append(c.nodeType?c:document.createTextNode(c)));return e}
+const daysTo=d=>Math.ceil((new Date(d+'T00:00:00')-new Date(today()+'T00:00:00'))/864e5);
+const pct=s=>s.topics.length?Math.round(100*s.topics.filter(t=>t.done).length/s.topics.length):0;
+
+const TABS=[['home','🏠','Home'],['exams','📅','Exams'],['focus','⏱️','Focus'],['rules','📖','Rules'],['ai','✨','AI Coach']];
+let cur='home';
+function nav(){const n=$('#nav');n.replaceChildren(...TABS.map(([k,i,l])=>el('button',{class:k===cur?'on':'',onclick:()=>{cur=k;show()}},el('b',{},i),l)))}
+function show(){nav();document.querySelectorAll('.tabs').forEach(t=>t.classList.toggle('on',t.id==='t-'+cur));({home:home,exams:exams,focus:focus,rules:rules,ai:ai})[cur]();window.scrollTo(0,0)}
+
+/* HOME: subjects + progress */
+function home(){
+  const r=$('#t-home');const all=S.subjects.flatMap(s=>s.topics);
+  const done=all.filter(t=>t.done).length,tot=all.length;
+  const next=S.exams.filter(e=>daysTo(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date))[0];
+  const mins=S.log[today()]||0;
+  $('#hello').textContent='Track subjects, exams and focus time in one place.';
+  const inp=el('input',{placeholder:'New subject (e.g. Biology 101)'});
+  const add=()=>{const v=inp.value.trim();if(!v)return;S.subjects.push({id:uid(),name:v,topics:[]});save();home()};
+  inp.onkeydown=e=>{if(e.key==='Enter')add()};
+  put(r,
+    soonBanner(),accountCard(),el('div',{class:'grid'},
+      el('div',{class:'stat'},el('b',{},tot?Math.round(100*done/tot)+'%':'–'),el('small',{},'Overall progress')),
+      el('div',{class:'stat'},el('b',{},next?daysTo(next.date)+'d':'–'),el('small',{},next?'Next: '+next.subject:'No upcoming exam')),
+      el('div',{class:'stat'},el('b',{},mins+'m'),el('small',{},'Focused today'))),
+    el('div',{class:'card'},el('div',{class:'row'},inp,el('button',{class:'btn',onclick:add},'Add subject'))),
+    S.subjects.length?S.subjects.map(subjectCard):el('div',{class:'empty'},'Add your first subject, then break it into topics to tick off.'),backupCard());
+}
+function subjectCard(s){
+  const inp=el('input',{placeholder:'Add a topic / chapter'});
+  const add=()=>{const v=inp.value.trim();if(!v)return;s.topics.push({id:uid(),t:v,done:false});save();home()};
+  inp.onkeydown=e=>{if(e.key==='Enter')add()};
+  return el('div',{class:'card'},
+    el('div',{class:'top'},el('h2',{},s.name),el('span',{class:'pill'},pct(s)+'%'),
+      el('button',{class:'x',title:'Delete subject',onclick:()=>{if(confirm('Delete '+s.name+'?')){S.subjects=S.subjects.filter(x=>x!==s);save();home()}}},'🗑')),
+    el('div',{class:'bar'},el('i',{style:'width:'+pct(s)+'%'})),
+    s.topics.map(t=>el('div',{class:'topic'+(t.done?' d':'')},
+      el('input',{type:'checkbox',...(t.done?{checked:''}:{}),onchange:e=>{t.done=e.target.checked;save();home()}}),
+      el('span',{},t.t),el('button',{class:'x',onclick:()=>{s.topics=s.topics.filter(x=>x!==t);save();home()}},'✕'))),
+    el('div',{class:'row',style:'margin-top:8px'},inp,el('button',{class:'btn ghost',onclick:add},'Add')));
+}
+
+/* EXAMS */
+function exams(){
+  const r=$('#t-exams');
+  const sub=el('input',{placeholder:'Subject / course',list:'sl'});
+  const dl=el('datalist',{id:'sl'},S.subjects.map(s=>el('option',{value:s.name})));
+  const d=el('input',{type:'date'}),t=el('input',{type:'time'}),loc=el('input',{placeholder:'Room / location (optional)'});
+  const list=[...S.exams].sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  put(r,
+    el('div',{class:'card'},el('h2',{},'Add exam'),dl,
+      el('div',{class:'row'},sub,loc),el('div',{class:'row'},d,t,
+      el('button',{class:'btn',onclick:()=>{if(!sub.value.trim()||!d.value){alert('Subject and date are required');return}
+        S.exams.push({id:uid(),subject:sub.value.trim(),date:d.value,time:t.value,loc:loc.value.trim()});save();exams()}},'Save exam'))),
+    remindCard(),
+    list.length?list.map(e=>{const n=daysTo(e.date);
+      return el('div',{class:'card'},el('div',{class:'top'},
+        el('div',{},el('h2',{style:'margin:0'},e.subject),el('span',{class:'note'},new Date(e.date+'T00:00:00').toDateString()+(e.time?' · '+e.time:'')+(e.loc?' · '+e.loc:''))),
+        el('span',{class:'pill'+(n>=0&&n<=7?' w':'')},n<0?'Passed':n===0?'Today':n+' days'),
+        el('button',{class:'x',onclick:()=>{S.exams=S.exams.filter(x=>x!==e);save();exams()}},'✕')))}):el('div',{class:'empty'},'No exams yet.'));
+}
+
+/* FOCUS: pomodoro */
+let P={mode:'focus',end:null,left:null,tick:null};
+const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+function focus(){
+  const r=$('#t-focus');
+  const f=el('input',{type:'number',min:1,max:120,value:S.pomo.focus}),b=el('input',{type:'number',min:1,max:60,value:S.pomo.brk});
+  const disp=el('div',{class:'timer',id:'disp'});
+  const mode=el('div',{class:'sub',style:'text-align:center',id:'pm'});
+  const go=el('button',{class:'btn',id:'go'});
+  const rs=el('button',{class:'btn ghost',onclick:()=>{stop();P.left=null;P.mode='focus';focus()}},'Reset');
+  const cfg=()=>{S.pomo.focus=Math.max(1,+f.value||25);S.pomo.brk=Math.max(1,+b.value||5);save();if(!P.tick){P.left=null;paint()}};
+  f.onchange=b.onchange=cfg;
+  go.onclick=()=>{if(P.tick){P.left=Math.max(0,Math.round((P.end-Date.now())/1000));stop()}else{if(P.left==null)P.left=(P.mode==='focus'?S.pomo.focus:S.pomo.brk)*60;P.end=Date.now()+P.left*1000;P.tick=setInterval(run,500)}paint()};
+  const mins=S.log[today()]||0;
+  put(r,el('div',{class:'card'},mode,disp,el('div',{class:'row',style:'justify-content:center'},go,rs)),
+    el('div',{class:'card'},el('h2',{},'Settings (minutes)'),el('div',{class:'row'},el('label',{},'Focus',f),el('label',{},'Break',b))),
+    weekCard());
+  paint();
+}
+function stop(){clearInterval(P.tick);P.tick=null}
+function run(){const l=Math.round((P.end-Date.now())/1000);if(l<=0){stop();if(P.mode==='focus'){S.log[today()]=(S.log[today()]||0)+S.pomo.focus;save()}
+  P.mode=P.mode==='focus'?'break':'focus';P.left=null;try{navigator.vibrate&&navigator.vibrate(300)}catch(e){}beep();if(cur==='focus')focus();else document.title='StudyBuddy';return}paint(l)}
+function beep(){try{const c=new (window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator();o.connect(c.destination);o.frequency.value=660;o.start();o.stop(c.currentTime+.4)}catch(e){}}
+function paint(l){const d=$('#disp');if(!d)return;const s=l!=null?l:(P.tick?Math.round((P.end-Date.now())/1000):(P.left!=null?P.left:(P.mode==='focus'?S.pomo.focus:S.pomo.brk)*60));
+  d.textContent=fmt(s);$('#pm').textContent=P.mode==='focus'?'Focus time 🎯':'Break ☕';$('#go').textContent=P.tick?'Pause':(P.left!=null?'Resume':'Start');document.title=P.tick?fmt(s)+' · StudyBuddy':'StudyBuddy'}
+
+/* RULES */
+let q='';
+function rules(){
+  const r=$('#t-rules');
+  const ti=el('input',{placeholder:'Title (e.g. Attendance policy)'}),tx=el('textarea',{placeholder:'Paste the rule text from your university guide…'});
+  const se=el('input',{placeholder:'🔍 Search rules',value:q});
+  se.oninput=()=>{q=se.value;draw()};
+  const box=el('div');
+  const draw=()=>{const m=S.rules.filter(x=>(x.title+' '+x.text).toLowerCase().includes(q.toLowerCase()));
+    box.replaceChildren(...(m.length?m.map(x=>el('div',{class:'card'},el('div',{class:'top'},el('h2',{style:'margin:0'},x.title),
+      el('button',{class:'x',onclick:()=>{S.rules=S.rules.filter(y=>y!==x);save();rules()}},'✕')),el('div',{style:'white-space:pre-wrap;margin-top:6px'},x.text))):[el('div',{class:'empty'},S.rules.length?'No matches.':'No rules saved yet. Add sections from your university guide so you and the AI Coach can find them fast.')]))};
+  put(r,el('div',{class:'card'},el('h2',{},'University guide'),
+    el('div',{class:'row'},ti),el('div',{class:'row'},tx),
+    el('button',{class:'btn',onclick:()=>{if(!ti.value.trim()||!tx.value.trim()){alert('Add a title and text');return}S.rules.unshift({id:uid(),title:ti.value.trim(),text:tx.value.trim()});save();rules()}},'Save rule'),importBox()),
+    se,el('div',{style:'height:10px'}),box);draw();
+}
+
+/* AI COACH */
+let chat=[];let busy=false;
+function ctx(){return JSON.stringify({today:today(),subjects:S.subjects.map(s=>({name:s.name,progress:pct(s)+'%',pending:s.topics.filter(t=>!t.done).map(t=>t.t),done:s.topics.filter(t=>t.done).map(t=>t.t)})),exams:S.exams.map(e=>({subject:e.subject,date:e.date,time:e.time,daysLeft:daysTo(e.date)})),universityRules:S.rules.map(x=>({title:x.title,text:x.text})),focusMinutesToday:S.log[today()]||0})}
+const SYS='You are StudyBuddy, a friendly study coach for college students. Use the student data below (subjects, topic progress, exam dates, saved university rules). Give concrete, realistic study schedules with dates, short and well organised. For questions about university rules, answer ONLY from universityRules; if the answer is not there, say so and suggest checking the official guide. Never invent rules.\n\nSTUDENT DATA:\n';
+async function ai(){
+  const r=$('#t-ai');
+  const box=el('div',{class:'chat'});
+  const inp=el('input',{placeholder:'Ask anything about your studies…'});
+  const draw=()=>{box.replaceChildren(...chat.map(m=>el('div',{class:'m '+(m.role==='user'?'u':'a')},m.content)))};
+  const send=async text=>{
+    text=(text||inp.value).trim();if(!text||busy)return;inp.value='';
+    const sample=await claude.use('sample').catch(()=>null);
+    if(!sample){chat.push({role:'user',content:text},{role:'assistant',content:localCoach(text)});draw();return}
+    chat.push({role:'user',content:text});const turns=chat.map((m,i)=>({role:m.role,content:i===0?SYS+ctx()+'\n\nSTUDENT: '+m.content:m.content}));
+    const a={role:'assistant',content:'Thinking…'};chat.push(a);draw();busy=true;
+    try{const res=await sample(turns,{cache:false,onText:({text})=>{a.content=text;draw()}});a.content=res.text}
+    catch(e){a.content=e&&e.code==='not_granted'?'Permission was declined, so I can\'t answer.':'Something went wrong, please try again.'}
+    busy=false;draw()};
+  inp.onkeydown=e=>{if(e.key==='Enter')send()};
+  const chips=[['🗓 Plan my week','Build a study plan for the next 7 days based on my exams and pending topics.'],['🎯 What first?','Which topic should I study first today and why?'],['📖 Rules help','Summarise my saved university rules in plain language.'],['🧠 Quiz me','Pick one of my pending topics and quiz me with 5 questions.']];
+  put(r,el('div',{class:'card'},el('h2',{},'AI Coach'),
+    el('p',{class:'note',style:'margin:0 0 10px'},'It reads your subjects, exam dates and saved rules to give personal advice.'),
+    el('div',{class:'chips'},chips.map(([l,t])=>el('button',{onclick:()=>send(t)},l))),box,
+    el('div',{class:'row'},inp,el('button',{class:'btn',onclick:()=>send()},'Send'))));
+  draw();
+}
+const put=(r,...k)=>r.replaceChildren(...k.flat());
+const dk=n=>{const d=new Date();d.setDate(d.getDate()-n);return d.toISOString().slice(0,10)};
+function soonBanner(){const u=S.exams.filter(e=>{const n=daysTo(e.date);return n>=0&&n<=3}).sort((a,b)=>a.date.localeCompare(b.date));
+ if(!u.length)return document.createDocumentFragment();
+ return el('div',{class:'card',style:'border-color:var(--warn)'},el('h2',{},'⏰ Exam reminders'),u.map(e=>{const n=daysTo(e.date);return el('div',{},e.subject+' — '+(n===0?'today':n===1?'tomorrow':'in '+n+' days')+(e.time?' at '+e.time:''))}))}
+function weekCard(){const days=[6,5,4,3,2,1,0].map(n=>({l:new Date(dk(n)+'T12:00:00').toLocaleDateString(undefined,{weekday:'short'}),m:S.log[dk(n)]||0}));
+ const mx=Math.max(60,...days.map(d=>d.m)),tot=days.reduce((a,d)=>a+d.m,0);let st=0,i=S.log[dk(0)]?0:1;while(S.log[dk(i)]){st++;i++}
+ return el('div',{class:'card'},el('div',{class:'top'},el('h2',{},'Last 7 days'),el('span',{class:'pill'},'🔥 '+st+'-day streak')),
+  el('div',{style:'display:flex;gap:8px;align-items:flex-end;height:120px'},days.map(d=>el('div',{style:'flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;font-size:11px;color:var(--mute);height:100%'},
+   el('div',{},d.m?d.m+'m':''),el('div',{style:'width:100%;height:'+Math.max(3,Math.round(80*d.m/mx))+'px;background:var(--acc);border-radius:5px 5px 0 0'}),el('div',{},d.l)))),
+  el('p',{class:'note',style:'margin:8px 0 0'},'Total this week: '+tot+' min · Today: '+(S.log[today()]||0)+' min'))}
+function notifyCheck(){try{if(!('Notification' in window)||Notification.permission!=='granted')return;S.notified=S.notified||{};
+ S.exams.forEach(e=>{const n=daysTo(e.date),k=e.id+':'+today();if(n>=0&&n<=1&&!S.notified[k]){S.notified[k]=1;new Notification('Exam '+(n?'tomorrow':'today')+': '+e.subject,{body:((e.time||'')+' '+(e.loc||'')).trim()})}});save()}catch(e){}}
+function remindCard(){const ok='Notification' in window,st=ok?Notification.permission:'unsupported';
+ return el('div',{class:'card'},el('h2',{},'Reminders'),el('p',{class:'note',style:'margin:0 0 8px'},'Exams within 3 days show a banner on Home. Optional browser notifications appear when you open the app (a free web app cannot push while it is closed).'),
+  st==='granted'?el('span',{class:'pill'},'Notifications on'):(ok&&st!=='denied')?el('button',{class:'btn ghost',onclick:()=>Notification.requestPermission().then(()=>{notifyCheck();exams()})},'Turn on notifications'):el('span',{class:'note'},'Notifications are blocked or unsupported here; the Home banner still works.'))}
+async function exportData(){const json=JSON.stringify(S,null,1);const dl=await claude.use('downloads').catch(()=>null);
+ if(dl){try{await dl.save({filename:'studybuddy-backup.json',data:json});return}catch(e){}}
+ try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([json],{type:'application/json'}));a.download='studybuddy-backup.json';document.body.append(a);a.click();a.remove()}catch(e){prompt('Copy your backup:',json)}}
+function backupCard(){const ta=el('textarea',{placeholder:'Paste a backup here to restore it…'});
+ return el('div',{class:'card'},el('h2',{},'Backup & move to another device'),el('p',{class:'note',style:'margin:0 0 8px'},SY.ref?'Your data syncs automatically to your account and stays private to you. A backup file is optional.':'Sync is not available here, so data is stored in this browser only. Export a backup to move it to another device.'),
+  el('div',{class:'row'},el('button',{class:'btn ghost',onclick:exportData},'Export backup'),el('button',{class:'btn ghost',onclick:()=>{try{const d=JSON.parse(ta.value);if(!d||!Array.isArray(d.subjects)||!Array.isArray(d.exams))throw 0;if(!confirm('Replace current data with this backup?'))return;S=Object.assign(S,d);save();home()}catch(e){alert('That does not look like a valid backup.')}}},'Restore')),ta)}
+function importRules(f){const rd=new FileReader();rd.onload=()=>{String(rd.result).split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean).forEach(x=>{const ls=x.split('\n');S.rules.push({id:uid(),title:ls[0].slice(0,80),text:ls.length>1?ls.slice(1).join('\n').trim():x})});save();rules()};rd.readAsText(f)}
+function importBox(){return el('label',{class:'note',style:'display:block;margin-top:10px'},'Or import a .txt file (rules separated by blank lines, first line = title): ',el('input',{type:'file',accept:'.txt,.md',onchange:e=>e.target.files[0]&&importRules(e.target.files[0])}))}
+
+function localCoach(q){q=q.toLowerCase();
+ const ex=S.exams.filter(e=>daysTo(e.date)>=0).sort((a,b)=>a.date.localeCompare(b.date));
+ const due=n=>{const e=ex.find(e=>e.subject.toLowerCase()===n.toLowerCase());return e?e.date:'9999'};
+ const pend=S.subjects.flatMap(s=>s.topics.filter(t=>!t.done).map(t=>({s:s.name,t:t.t}))).sort((a,b)=>due(a.s).localeCompare(due(b.s)));
+ if(/rule|policy|guide/.test(q))return S.rules.length?'Your saved rules:\n'+S.rules.map(r=>'• '+r.title).join('\n')+'\n\nOpen the Rules tab and search to read any of them.':'No rules saved yet. Add them in the Rules tab.';
+ if(!pend.length)return 'You have no pending topics. Add subjects and topics on Home and I will plan around them.';
+ if(/quiz|test/.test(q)){const p=pend[Math.floor(Math.random()*pend.length)];return 'Self-quiz: "'+p.t+'" ('+p.s+')\n1. Explain it in 3 sentences without notes.\n2. Give one real example.\n3. What is the most common mistake?\n4. How does it connect to another topic?\n5. Write one exam-style question on it and answer it.'}
+ if(/first|today|now|next/.test(q)){const p=pend[0],d=due(p.s);return 'Start with "'+p.t+'" ('+p.s+')'+(d<'9999'?', your nearest exam is in '+daysTo(d)+' days':'')+'. Do 2 focus sessions on it, then tick it off.'}
+ const per=Math.min(4,Math.max(1,Math.ceil(pend.length/7)));let out='7-day plan ('+per+' topic'+(per>1?'s':'')+'/day, nearest exams first, 25-min focus sessions with 5-min breaks):\n';
+ for(let i=0;i<7;i++){const day=pend.slice(i*per,i*per+per);if(!day.length)break;out+='\n'+new Date(dk(-i)+'T12:00:00').toDateString().slice(0,10)+': '+day.map(p=>p.t+' ('+p.s+')').join('; ')}
+ if(pend.length>7*per)out+='\n\n'+(pend.length-7*per)+' more topics remain for next week.';
+ return out}
+
+/* ACCOUNT + CLOUD SYNC (private per-user doc; last change wins) */
+const SY={ref:null,name:'',state:'local',t:null};
+function syncUi(){const b=$('#sync');if(!b)return;const m={local:'💾 Saved on this device only',saving:'☁️ Saving…',synced:'☁️ Synced'+(SY.name?' · '+SY.name:''),readonly:'🔒 Not allowed to sync (check Firestore rules)',error:'⚠️ Sync failed, will retry on your next change'};b.textContent=m[SY.state]}
+function push(){if(!SY.ref)return;SY.state='saving';syncUi();clearTimeout(SY.t);
+ SY.t=setTimeout(async()=>{SY.t=null;try{await SY.ref.set({s:JSON.stringify(S),updatedAt:S.updatedAt});SY.state='synced'}catch(e){SY.state=(e&&e.code==='invalid_argument')?'readonly':'error'}syncUi()},1500)}
+function applyRemote(d){try{const r=JSON.parse(d.s);S=Object.assign({subjects:[],exams:[],rules:[],log:{},pomo:{focus:25,brk:5}},r);S.updatedAt=d.updatedAt;
+ try{localStorage.setItem('studybuddy',JSON.stringify(S))}catch(e){}const y=window.scrollY;show();window.scrollTo(0,y)}catch(e){}}
+function accountCard(){
+ if(!SY.fb)return el('div',{class:'card'},el('h2',{},'Account & sync'),el('p',{class:'note',style:'margin:0'},'Cloud sync is off. Add your Firebase settings in firebase-config.js to enable Google sign-in.'));
+ if(!SY.user)return el('div',{class:'card'},el('h2',{},'Account & sync'),el('p',{class:'note',style:'margin:0 0 8px'},'Sign in with Google to back up and sync your study data across devices.'),el('button',{class:'btn',onclick:()=>SY.fb.signIn().catch(e=>alert('Sign-in failed: '+(e.code||e.message)))},'Sign in with Google'));
+ return el('div',{class:'card'},el('div',{class:'top'},el('div',{},el('h2',{style:'margin:0'},SY.user.displayName||'Signed in'),el('span',{class:'note'},SY.user.email||'')),el('button',{class:'btn ghost',onclick:()=>SY.fb.signOut()},'Sign out')))}
+async function initSync(){try{const fb=await window.FBReady;if(!fb)return;SY.fb=fb;if(cur==='home')home();
+ fb.onUser(async u=>{SY.user=u;if(SY.unsub){SY.unsub();SY.unsub=null}
+  if(!u){SY.ref=null;SY.name='';SY.state='local';syncUi();if(cur==='home')home();return}
+  SY.name=u.displayName||u.email||'';SY.ref=fb.ref(u.uid);
+  try{const first=await SY.ref.get(),d=first.exists?first.data():null;
+   if(d&&d.updatedAt>(S.updatedAt||0))applyRemote(d);
+   else if(S.subjects.length||S.exams.length||S.rules.length||Object.keys(S.log).length)push();
+   else{SY.state='synced';syncUi()}
+   SY.unsub=SY.ref.onSnapshot(snap=>{if(snap.metadata.hasPendingWrites||!snap.exists)return;const x=snap.data();if(x&&!SY.t&&x.updatedAt>(S.updatedAt||0))applyRemote(x)},()=>{});
+  }catch(e){SY.state='error';syncUi()}
+  if(cur==='home')home();
+ })}catch(e){}}
+notifyCheck();
+show();
+initSync();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
